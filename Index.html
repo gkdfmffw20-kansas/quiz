@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>English</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 16px 40px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f4f6f9; color: #1a1a1a;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 24px 0 4px; color: #12283f; }
+  .instructions { color: #4a5568; font-size: 0.95rem; margin-bottom: 16px; }
+  .navbar {
+    position: sticky; top: 0; background: #f4f6f9; padding: 10px 0; z-index: 10;
+    border-bottom: 1px solid #d7dde6; margin-bottom: 16px;
+  }
+  .navrow { display: flex; align-items: center; gap: 10px; }
+  .navcount { font-weight: 600; font-size: 0.9rem; white-space: nowrap; color: #12283f; }
+  .progress-track { flex: 1; height: 6px; background: #d7dde6; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: #185FA5; width: 0%; transition: width 0.2s; }
+  .jumpbtn, .resultsbtn {
+    background: #185FA5; color: #fff; border: none; border-radius: 6px;
+    padding: 6px 12px; font-size: 0.85rem; cursor: pointer; white-space: nowrap;
+  }
+  .resultsbtn { background: #1D9E75; display: none; }
+  .dotpanel {
+    display: none; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding: 10px;
+    background: #fff; border-radius: 8px; border: 1px solid #d7dde6;
+  }
+  .dot {
+    width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 0.75rem; cursor: pointer; background: #d7dde6;
+    color: #12283f; border: none; font-weight: 600;
+  }
+  .dot.correct { background: #185FA5; color: #fff; }
+  .dot.wrong { background: #E24B4A; color: #fff; }
+  .card {
+    background: #fff; border-radius: 10px; padding: 18px 20px; margin-bottom: 16px;
+    border: 1px solid #e1e6ec; display: none;
+  }
+  .card.active { display: block; }
+  .qtag {
+    display: inline-block; color: #fff; font-size: 0.72rem; font-weight: 700;
+    padding: 3px 9px; border-radius: 20px; margin-bottom: 10px; letter-spacing: 0.02em;
+  }
+  .qnum { color: #7a8699; font-size: 0.8rem; margin-bottom: 4px; }
+  .context-box {
+    background: #f8f9fb; border-left: 3px solid #185FA5; padding: 10px 14px;
+    margin: 10px 0 14px; font-size: 0.92rem; color: #333; border-radius: 0 6px 6px 0;
+    line-height: 1.5;
+  }
+  .stem { font-size: 1.05rem; margin-bottom: 14px; line-height: 1.5; color: #16233a; }
+  .opt {
+    display: block; width: 100%; text-align: left; padding: 11px 14px; margin-bottom: 9px;
+    border: 1.5px solid #d7dde6; border-radius: 8px; background: #fff; cursor: pointer;
+    font-size: 0.98rem; color: #1a1a1a; line-height: 1.4;
+  }
+  .opt:hover { border-color: #185FA5; }
+  .opt.selected-correct { border-color: #1D9E75; background: #e8f7f1; }
+  .opt.selected-wrong { border-color: #E24B4A; background: #fdecec; }
+  .opt.reveal-correct { border-color: #1D9E75; background: #e8f7f1; }
+  .opt[disabled] { cursor: default; }
+  .feedback { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 0.92rem; line-height: 1.5; display: none; }
+  .feedback.show { display: block; }
+  .feedback.correct { background: #e8f7f1; color: #14603f; }
+  .feedback.wrong { background: #fdecec; color: #8a2424; }
+  .navbtns { display: flex; justify-content: space-between; margin-top: 6px; }
+  .navbtn {
+    background: #12283f; color: #fff; border: none; border-radius: 6px; padding: 9px 16px;
+    font-size: 0.9rem; cursor: pointer;
+  }
+  .navbtn:disabled { opacity: 0.4; cursor: default; }
+  .actionrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+  .actionbtn {
+    background: #fff; border: 1.5px solid #185FA5; color: #185FA5; border-radius: 8px;
+    padding: 9px 14px; font-size: 0.88rem; cursor: pointer; font-weight: 600;
+  }
+  .actionbtn.danger { border-color: #E24B4A; color: #E24B4A; }
+  .actionbtn.green { border-color: #1D9E75; color: #1D9E75; }
+  .results-panel {
+    display: none; background: #fff; border-radius: 10px; padding: 20px; margin-bottom: 16px;
+    border: 1px solid #e1e6ec; text-align: center;
+  }
+  .results-panel.show { display: block; }
+  .results-score { font-size: 2.2rem; font-weight: 800; color: #185FA5; }
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(10,20,35,0.5);
+    align-items: center; justify-content: center; z-index: 100;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-box {
+    background: #fff; border-radius: 10px; padding: 22px; max-width: 320px; text-align: center;
+  }
+  .modal-box p { margin: 0 0 16px; color: #16233a; }
+  .modal-btns { display: flex; gap: 10px; justify-content: center; }
+  .modal-btn {
+    border: none; border-radius: 6px; padding: 9px 16px; cursor: pointer; font-size: 0.9rem;
+  }
+  .modal-btn.confirm { background: #E24B4A; color: #fff; }
+  .modal-btn.cancel { background: #d7dde6; color: #12283f; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>English</h1>
+  <div class="instructions">Read each question (and any passage) carefully, then choose the best answer. Click an option to check your answer and see the explanation.</div>
+
+  <div class="navbar">
+    <div class="navrow">
+      <span class="navcount" id="navcount">0/20</span>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <button class="resultsbtn" id="resultsBtn" onclick="showResults()">Results</button>
+      <button class="jumpbtn" id="jumpBtn" onclick="toggleJump()">Jump ▾</button>
+    </div>
+    <div class="dotpanel" id="dotPanel"></div>
+  </div>
+
+  <div class="results-panel" id="resultsPanel">
+    <div class="results-score" id="resultsScore">0/0</div>
+    <div style="color:#4a5568; margin-top:6px;">Questions answered correctly</div>
+  </div>
+
+  <div id="cardsHost"></div>
+
+  <div class="actionrow">
+    <button class="actionbtn" id="retryBtn" onclick="retryWrongOnes()">Retry Wrong Ones</button>
+    <button class="actionbtn green" onclick="saveWrongAnswers()">Save Wrong Answers</button>
+    <button class="actionbtn danger" onclick="requestStartFresh()">Start Fresh</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <p>Start fresh? This will clear all your answers for this quiz.</p>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn confirm" onclick="doStartFresh()">Start Fresh</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const QUIZ_KEY = "christian_english";
+const DATE_STR = "20260915";
+const STORAGE_KEY = "quiz_" + QUIZ_KEY + "_" + DATE_STR;
+const ALL_QUESTIONS = [{"tag": "Reading: Literature", "tagcolor": "#185FA5", "stem": "Which detail from the passage most clearly foreshadows a problem the hikers are about to face?", "opts": ["Mia zipped her jacket even though the sun was still warm on her shoulders.", "Mia's brother pointed out a hawk circling lazily above the trail.", "Mia checked the map one more time before they started climbing.", "Mia kept glancing at the dark clouds piling up over the ridge and told her brother they should turn back soon."], "ci": 3, "exp": "The story repeatedly draws attention to the darkening sky and Mia's growing worry, which hints that a storm is about to interrupt the hike \u2014 that's what foreshadowing does, planting an early clue about what's coming.", "context": "Mia zipped her jacket even though the sun was still shining, and she kept glancing at the dark clouds piling up over the ridge. 'We should turn back soon,' she told her brother, tightening the straps on her backpack. He laughed and kept climbing, certain the weather would hold.", "id": "christian_english_0"}, {"tag": "Reading: Literature", "tagcolor": "#185FA5", "stem": "What is the theme of the passage below?", "opts": ["True courage sometimes means admitting you were wrong and asking for help.", "Younger siblings should always listen to their older siblings.", "Hiking in the mountains can be dangerous during storms.", "Weather forecasts are often unreliable in mountain regions."], "ci": 0, "exp": "The passage isn't really about the storm itself \u2014 it's about Jonah's shift from stubborn pride to humility when he admits his mistake and calls for help, which points to a theme about the real meaning of courage.", "context": "Jonah had insisted they didn't need a guide. Now, soaked and shivering with the trail lost in fog, he swallowed his pride and pulled out his phone. 'I was wrong,' he said quietly, dialing the ranger station. 'We need help finding our way back.'", "id": "christian_english_1"}, {"tag": "Reading: Literature", "tagcolor": "#185FA5", "stem": "What is the central conflict between Priya and her coach in the passage?", "opts": ["Priya wants to play her natural, aggressive style, but her coach insists she follow a cautious, defensive strategy.", "Priya's coach wants her to switch from soccer to a different sport entirely.", "Priya and her coach disagree about which cleats she should wear for the match.", "Priya is angry that her coach benched a different player instead of her."], "ci": 0, "exp": "The passage centers on Priya being told to hold back and play it safe when everything in her wants to push forward and attack \u2014 that clash between her instincts and her coach's game plan is the central conflict.", "context": "\"Hold the line, don't push up,\" her coach barked from the sideline. But Priya's feet itched to sprint forward, to chase the ball the way she always had. Every cautious pass felt like a betrayal of the game she loved to play.", "id": "christian_english_2"}, {"tag": "Reading: Literature", "tagcolor": "#185FA5", "stem": "The passage below is told from Grandpa Elias's point of view for most of the paragraph, until the final sentence. Whose perspective does the final sentence shift to?", "opts": ["No one's \u2014 the final sentence has no point of view at all.", "The neighbor's point of view, since he is mentioned in the last sentence.", "Ana's point of view, as we suddenly see Grandpa Elias through her eyes instead of hearing his own thoughts.", "The narrator remains in Grandpa Elias's point of view for the entire paragraph."], "ci": 2, "exp": "Until the last line we're inside Grandpa Elias's head, hearing his private worries. Then the sentence pulls back to describe how he looks from the outside \u2014 through Ana's eyes as she watches him \u2014 which is a shift in point of view, not just a change in subject.", "context": "Grandpa Elias stared at the old photograph, wondering if he'd made the right choice all those years ago. Had he been too proud, too stubborn to admit he needed his family? From across the room, Ana watched her grandfather's shoulders sag, and for the first time she saw him not as a wall of quiet strength, but as an old man carrying a regret he'd never spoken aloud.", "id": "christian_english_3"}, {"tag": "Reading: Literature", "tagcolor": "#185FA5", "stem": "What is the theme of the passage below?", "opts": ["Studying for exams is more important than spending time with friends.", "It is important to always keep your promises no matter what happens.", "Real friendship means showing up for someone even when it's inconvenient.", "People should never ask their friends for favors."], "ci": 2, "exp": "Deshawn cancels his own plans and shows up for Marcus without being asked twice, even though it costs him something \u2014 that willingness to be inconvenienced for someone else's sake is what the passage is really getting at.", "context": "Deshawn had promised himself a quiet Saturday to finally finish his model rocket. But when Marcus called, voice shaking, saying his dog had run off during the thunderstorm, Deshawn grabbed his raincoat without a second thought. The rocket could wait. Marcus couldn't.", "id": "christian_english_4"}, {"tag": "Reading: Literature", "tagcolor": "#185FA5", "stem": "What does the lighthouse most likely symbolize in the passage below?", "opts": ["Hope and guidance during a difficult, uncertain time.", "The dangers of sailing at night without proper equipment.", "The physical size and engineering of coastal buildings.", "The importance of following government safety regulations."], "ci": 0, "exp": "The lighthouse beam appears right when Talia feels most lost and afraid, cutting through the darkness and giving her something steady to aim for \u2014 that's a classic use of a lighthouse as a symbol of hope and direction, not just a literal building.", "context": "The waves tossed the little boat like a toy, and Talia had long since lost sight of the shore. Just when her hands began to shake too hard to grip the oars, a steady beam swept across the water. She fixed her eyes on that light and started to row.", "id": "christian_english_5"}, {"tag": "Reading: Informational Text", "tagcolor": "#1D9E75", "stem": "What is the central idea of the passage below?", "opts": ["Urban community gardens provide both practical and social benefits to city neighborhoods.", "City governments should replace all parking lots with gardens.", "Growing tomatoes requires at least six hours of direct sunlight each day.", "Community gardens were first invented during the Great Depression."], "ci": 0, "exp": "The passage gives several examples \u2014 fresh produce, lower grocery costs, and neighbors getting to know each other \u2014 that all support one main point: community gardens help a neighborhood in more than one way.", "context": "Across the city, vacant lots are being transformed into community gardens. Residents grow fresh vegetables, cutting their grocery bills, while neighbors who once passed each other silently now trade tomatoes and gardening tips. Local health workers report that garden neighborhoods also see more people walking and spending time outdoors together.", "id": "christian_english_6"}, {"tag": "Reading: Informational Text", "tagcolor": "#1D9E75", "stem": "How is the passage below primarily organized?", "opts": ["As a problem followed by a series of possible solutions.", "As a comparison between two completely different cities.", "As a single extended definition of one key term.", "In strict chronological order, from earliest to most recent events."], "ci": 0, "exp": "The passage opens by naming an issue \u2014 traffic congestion \u2014 and then walks through several different approaches cities are trying, one after another, which is the problem-solution structure, not a timeline or a comparison.", "context": "Traffic congestion costs commuters hours every week. Some cities have responded by expanding bus rapid transit lines. Others have added protected bike lanes to encourage cycling. A few have experimented with congestion pricing, charging drivers extra to enter downtown during peak hours.", "id": "christian_english_7"}, {"tag": "Reading: Informational Text", "tagcolor": "#1D9E75", "stem": "Which piece of evidence best supports the author's claim that the new recycling program is working?", "opts": ["The mayor announced the recycling program at a press conference last spring.", "Several other cities are considering similar recycling programs.", "Recycling bins are now painted blue instead of green.", "The city reports that landfill waste dropped by eighteen percent in the six months after the program began."], "ci": 3, "exp": "A measurable drop in landfill waste directly after the program started is hard evidence that the claim is backed up by data, while the other options are just details or unrelated facts that don't actually prove the program is working.", "context": "City officials claim the new recycling program has been a success. According to the public works department, landfill waste dropped by eighteen percent in the six months after the program launched, even as the city's population grew.", "id": "christian_english_8"}, {"tag": "Reading: Informational Text", "tagcolor": "#1D9E75", "stem": "Which sentence from the passage below most clearly reveals the author's bias in favor of the new stadium?", "opts": ["\"The stadium is expected to cost the city approximately two hundred million dollars.\"", "\"The stadium would seat roughly forty thousand fans.\"", "\"Construction on the stadium is scheduled to begin next spring.\"", "\"Anyone who opposes this stadium simply doesn't care about our city's future.\""], "ci": 3, "exp": "Calling anyone who disagrees uncaring about the city's future is a loaded, one-sided judgment rather than a neutral fact \u2014 that's the sentence that shows the author has taken a side, unlike the plain factual statements in the other options.", "context": "The proposed downtown stadium has divided the city council. \"The stadium is expected to cost the city approximately two hundred million dollars,\" the report notes, with construction scheduled to begin next spring if approved. \"Anyone who opposes this stadium simply doesn't care about our city's future,\" the mayor said at Tuesday's meeting.", "id": "christian_english_9"}, {"tag": "Reading: Informational Text", "tagcolor": "#1D9E75", "stem": "Source A says the school day should start later because teenagers' sleep cycles naturally shift later. Source B says the school day should stay the same because bus schedules can't easily change. What is the key difference between how the two sources approach the issue?", "opts": ["Source A and Source B are both focused entirely on academic test scores.", "Source A is written by a doctor, while Source B is written by a student.", "Source A supports later start times, and Source B also supports later start times.", "Source A bases its argument on the biology of teenage sleep, while Source B bases its argument on logistical scheduling concerns."], "ci": 3, "exp": "The two sources aren't arguing about the same kind of evidence at all \u2014 one leans on biological research about sleep, and the other leans on practical transportation logistics \u2014 so the real difference is the type of reasoning each one uses, not just their conclusions.", "context": "Source A: Sleep researchers have found that teenagers' internal clocks naturally shift later during adolescence, making early wake-up times harder on their bodies and minds. Source B: Transportation officials note that bus routes are tightly scheduled across elementary, middle, and high schools, and shifting one start time would require redesigning the entire system.", "id": "christian_english_10"}, {"tag": "Textual Evidence", "tagcolor": "#f5a623", "stem": "Which quotation from the passage below best supports the inference that Noor is nervous about the science fair?", "opts": ["\"Noor had spent three weeks researching soil erosion for her project.\"", "\"Noor's older sister had won first place at the same fair two years earlier.\"", "\"The science fair was scheduled to begin at nine o'clock sharp.\"", "\"Noor rehearsed her presentation for the fourth time that morning, her hands still trembling slightly as she reached for her poster board.\""], "ci": 3, "exp": "Trembling hands and rehearsing the same presentation four times in one morning are physical, behavioral clues that point directly to nervousness, while the other quotations are just background facts that don't describe how Noor is feeling.", "context": "Noor rehearsed her presentation for the fourth time that morning, her hands still trembling slightly as she reached for her poster board. She had spent three weeks researching soil erosion for her project, and the science fair was scheduled to begin at nine o'clock sharp. Her older sister had won first place at the same fair two years earlier.", "id": "christian_english_11"}, {"tag": "Textual Evidence", "tagcolor": "#f5a623", "stem": "Which quotation from the passage below best supports the inference that the town's economy depended heavily on the mill?", "opts": ["\"The mill's whistle used to blow every day at noon.\"", "\"When the mill closed its doors in March, nearly half of the town's working adults found themselves suddenly unemployed.\"", "\"The mill had been built in 1912 out of red brick hauled in by train.\"", "\"A new coffee shop opened on Main Street the following summer.\""], "ci": 1, "exp": "A statistic showing that nearly half of working adults lost their jobs the moment the mill shut down is direct evidence of how much the town's economy relied on it, unlike the historical or unrelated details in the other choices.", "context": "When the mill closed its doors in March, nearly half of the town's working adults found themselves suddenly unemployed. The mill had been built in 1912 out of red brick hauled in by train, and its whistle used to blow every day at noon. A new coffee shop opened on Main Street the following summer, but it employed only three people.", "id": "christian_english_12"}, {"tag": "Writing Skills", "tagcolor": "#7b61ff", "stem": "Malik is writing an informational essay explaining how a bill becomes a law. Which organizational structure would best fit his purpose?", "opts": ["Sequential/chronological order, walking through each step of the process in the order it happens.", "Comparison and contrast, weighing two different bills against each other.", "A cause-and-effect structure focused only on the effects of one specific law.", "A single extended definition of the word \"law.\""], "ci": 0, "exp": "Explaining a multi-step process like how a bill becomes a law calls for walking readers through the steps in the order they occur, which is exactly what a sequential/chronological structure does \u2014 the other structures don't match the step-by-step nature of the topic.", "id": "christian_english_13"}, {"tag": "Writing Skills", "tagcolor": "#7b61ff", "stem": "In her short story, Elena wants readers to experience the surprise of the twist ending at the same moment her main character does. Which narrative technique would best achieve this?", "opts": ["Using a limited third-person point of view that only reveals information as the main character discovers it.", "Starting the story with a summary that reveals how it will end.", "Using an omniscient narrator who explains every character's thoughts and secrets from the very first page.", "Switching to second-person point of view for the final paragraph only."], "ci": 0, "exp": "If the narration only shows what the main character knows at each moment, readers can't get ahead of the story \u2014 they find out the twist exactly when the character does, which is the effect a limited point of view creates.", "id": "christian_english_14"}, {"tag": "Writing Skills", "tagcolor": "#7b61ff", "stem": "Devon is citing a book by author Maria Torres in his MLA-style Works Cited page. Which entry follows correct basic MLA format?", "opts": ["Maria Torres, \"The River's Edge,\" Harbor Press 2019.", "Torres, Maria. <em>The River's Edge</em>. Harbor Press, 2019.", "The River's Edge by Maria Torres, published 2019 by Harbor Press.", "Torres, M. (2019) The River's Edge. Harbor Press."], "ci": 1, "exp": "Basic MLA format for a book lists the author as Last name, First name, then the italicized title, then the publisher and year, separated by periods \u2014 the other formats mix in APA-style parentheses or drop the required last-name-first order.", "id": "christian_english_15"}, {"tag": "Writing Skills", "tagcolor": "#7b61ff", "stem": "Which sentence would be the most effective addition to an argumentative essay claiming that school libraries should stay open later, because it directly addresses a counterargument?", "opts": ["Many students enjoy reading books during their free time.", "Some argue that keeping the library open later would cost too much in staffing, but a rotating volunteer schedule could cover the extra hours at little extra expense.", "The school library currently closes at three thirty every afternoon.", "The library was renovated two years ago with new furniture."], "ci": 1, "exp": "A strong counterargument sentence names the opposing view directly \u2014 here, the cost concern \u2014 and then answers it, which is what makes an argument persuasive; the other sentences are just neutral facts that don't engage with any objection.", "id": "christian_english_16"}, {"tag": "Speaking & Listening", "tagcolor": "#0d9488", "stem": "During a Socratic seminar, a classmate makes a claim that Sam disagrees with. What is the most effective next move for Sam to make in the discussion?", "opts": ["Ask the classmate to explain the reasoning or evidence behind their claim before responding with his own view.", "Immediately tell the classmate that their claim is wrong and move on to a new topic.", "Repeat his own opinion louder so the group pays attention to it instead.", "Wait until the seminar ends and tell the teacher privately that he disagreed."], "ci": 0, "exp": "Effective seminar discussion builds on other people's reasoning rather than shutting it down \u2014 asking a classmate to explain their thinking shows active listening and gives Sam real material to respond to, which is far more productive than dismissing the claim or talking over it.", "id": "christian_english_17"}, {"tag": "Media Literacy", "tagcolor": "#E24B4A", "stem": "Jasmine finds a startling health claim on a website with no listed author, no sources cited, and a domain name designed to look like a well-known news organization. What should Jasmine do before sharing the claim?", "opts": ["Assume it's true because the website's design looks professional.", "Look for the same claim reported by credible, verifiable sources before trusting or sharing it.", "Share it right away, since it appeared near the top of her search results.", "Judge the claim only by how many people have already shared it."], "ci": 1, "exp": "A missing author, no cited sources, and a copycat-looking domain name are classic red flags for unreliable content, so the responsible move is to cross-check the claim against sources that can be verified \u2014 professional design or popularity alone don't establish credibility.", "id": "christian_english_18"}, {"tag": "Media Literacy", "tagcolor": "#E24B4A", "stem": "A textbook passage and a short documentary clip both cover the causes of the Dust Bowl. What is one key advantage the documentary clip has that the text passage does not?", "opts": ["It always presents information more objectively than written text.", "It can include more precise statistics and footnotes than a written passage can.", "It can combine narration with archival photos and film footage to show viewers what the conditions actually looked like.", "It allows readers to control their own pace by rereading difficult sections."], "ci": 2, "exp": "Video and audio media can layer voice narration together with real historical images and footage, giving viewers a direct visual sense of the event that plain text can only describe in words \u2014 the other options either aren't true advantages of video or actually describe strengths of text instead.", "id": "christian_english_19"}];
+
+let activeQuestions = ALL_QUESTIONS.slice();
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.activeIds)) {
+        activeQuestions = parsed.activeIds.map(id => ALL_QUESTIONS.find(q => q.id === id)).filter(Boolean);
+        if (activeQuestions.length === 0) activeQuestions = ALL_QUESTIONS.slice();
+      }
+      return parsed;
+    }
+  } catch (e) {}
+  return { answers: {}, current: 0, activeIds: activeQuestions.map(q => q.id) };
+}
+
+function saveState() {
+  state.activeIds = activeQuestions.map(q => q.id);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+let current = state.current || 0;
+if (current >= activeQuestions.length) current = 0;
+
+function renderCards() {
+  const host = document.getElementById('cardsHost');
+  host.innerHTML = '';
+  activeQuestions.forEach((q, idx) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'card-' + idx;
+    let html = '';
+    html += '<div class="qnum">Question ' + (idx + 1) + ' of ' + activeQuestions.length + '</div>';
+    html += '<span class="qtag" style="background:' + q.tagcolor + ';">' + q.tag + '</span>';
+    if (q.context) {
+      html += '<div class="context-box">' + q.context + '</div>';
+    }
+    html += '<div class="stem">' + q.stem + '</div>';
+    html += '<div class="opts" id="opts-' + idx + '">';
+    q.opts.forEach((opt, oi) => {
+      html += '<button class="opt" id="opt-' + idx + '-' + oi + '" onclick="selectAnswer(' + idx + ',' + oi + ')">' + opt + '</button>';
+    });
+    html += '</div>';
+    html += '<div class="feedback" id="feedback-' + idx + '"></div>';
+    html += '<div class="navbtns">';
+    html += '<button class="navbtn" id="prev-' + idx + '" onclick="goTo(' + (idx - 1) + ')" ' + (idx === 0 ? 'disabled' : '') + '>Previous</button>';
+    html += '<button class="navbtn" id="next-' + idx + '" onclick="goTo(' + (idx + 1) + ')" ' + (idx === activeQuestions.length - 1 ? 'disabled' : '') + '>Next</button>';
+    html += '</div>';
+    card.innerHTML = html;
+    host.appendChild(card);
+  });
+}
+
+function goTo(idx) {
+  if (idx < 0 || idx >= activeQuestions.length) return;
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+  const card = document.getElementById('card-' + idx);
+  if (card) card.classList.add('active');
+  current = idx;
+  state.current = idx;
+  saveState();
+  restoreAnswerUI(idx);
+}
+
+function restoreAnswerUI(idx) {
+  const q = activeQuestions[idx];
+  const ans = state.answers[q.id];
+  const optsHost = document.getElementById('opts-' + idx);
+  if (!optsHost) return;
+  const buttons = optsHost.querySelectorAll('.opt');
+  buttons.forEach((b, oi) => {
+    b.classList.remove('selected-correct', 'selected-wrong', 'reveal-correct');
+    b.disabled = false;
+  });
+  const fb = document.getElementById('feedback-' + idx);
+  fb.classList.remove('show', 'correct', 'wrong');
+  fb.textContent = '';
+  if (ans !== undefined) {
+    buttons.forEach((b, oi) => {
+      b.disabled = true;
+      if (oi === q.ci) b.classList.add('reveal-correct');
+      if (oi === ans && oi !== q.ci) b.classList.add('selected-wrong');
+      if (oi === ans && oi === q.ci) b.classList.add('selected-correct');
+    });
+    fb.classList.add('show', ans === q.ci ? 'correct' : 'wrong');
+    fb.textContent = (ans === q.ci ? 'Correct! ' : 'Not quite. ') + q.exp;
+  }
+}
+
+function selectAnswer(idx, oi) {
+  const q = activeQuestions[idx];
+  if (state.answers[q.id] !== undefined) return;
+  state.answers[q.id] = oi;
+  saveState();
+  restoreAnswerUI(idx);
+  updateNav();
+}
+
+function updateNav() {
+  const total = activeQuestions.length;
+  let answered = 0, correct = 0;
+  activeQuestions.forEach(q => {
+    if (state.answers[q.id] !== undefined) {
+      answered++;
+      if (state.answers[q.id] === q.ci) correct++;
+    }
+  });
+  document.getElementById('navcount').textContent = answered + '/' + total;
+  document.getElementById('progressFill').style.width = (total ? (answered / total * 100) : 0) + '%';
+  document.getElementById('resultsBtn').style.display = (answered === total && total > 0) ? 'inline-block' : 'none';
+  renderDots();
+}
+
+function renderDots() {
+  const panel = document.getElementById('dotPanel');
+  panel.innerHTML = '';
+  activeQuestions.forEach((q, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'dot';
+    const ans = state.answers[q.id];
+    if (ans !== undefined) {
+      btn.classList.add(ans === q.ci ? 'correct' : 'wrong');
+    }
+    btn.textContent = (idx + 1);
+    btn.onclick = () => { goTo(idx); };
+    panel.appendChild(btn);
+  });
+}
+
+function toggleJump() {
+  const panel = document.getElementById('dotPanel');
+  const btn = document.getElementById('jumpBtn');
+  const isOpen = panel.style.display === 'flex';
+  panel.style.display = isOpen ? 'none' : 'flex';
+  btn.textContent = isOpen ? 'Jump ▾' : 'Hide ▴';
+}
+
+function showResults() {
+  const panel = document.getElementById('resultsPanel');
+  let correct = 0;
+  activeQuestions.forEach(q => { if (state.answers[q.id] === q.ci) correct++; });
+  document.getElementById('resultsScore').textContent = correct + '/' + activeQuestions.length;
+  panel.classList.add('show');
+  panel.scrollIntoView({ behavior: 'smooth' });
+}
+
+function retryWrongOnes() {
+  const wrongIds = activeQuestions.filter(q => state.answers[q.id] !== undefined && state.answers[q.id] !== q.ci).map(q => q.id);
+  if (wrongIds.length === 0) {
+    alertBox('No wrong answers to retry in the current set!');
+    return;
+  }
+  activeQuestions = wrongIds.map(id => ALL_QUESTIONS.find(q => q.id === id)).filter(Boolean);
+  state.answers = {};
+  state.current = 0;
+  current = 0;
+  document.getElementById('resultsPanel').classList.remove('show');
+  saveState();
+  renderCards();
+  goTo(0);
+  updateNav();
+}
+
+function alertBox(msg) {
+  const fb = document.createElement('div');
+  fb.textContent = msg;
+  fb.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#12283f;color:#fff;padding:10px 18px;border-radius:8px;font-size:0.9rem;z-index:200;';
+  document.body.appendChild(fb);
+  setTimeout(() => fb.remove(), 2200);
+}
+
+function saveWrongAnswers() {
+  const wrongAnswers = [];
+  ALL_QUESTIONS.forEach(q => {
+    const ans = state.answers[q.id];
+    if (ans !== undefined && ans !== q.ci) {
+      wrongAnswers.push({
+        question: stripHtml(q.stem),
+        yourAnswer: stripHtml(q.opts[ans]),
+        correctAnswer: stripHtml(q.opts[q.ci]),
+        explanation: stripHtml(q.exp)
+      });
+    }
+  });
+  const payload = { title: document.title, wrongAnswers: wrongAnswers };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = QUIZ_KEY + '_wronganswers_' + DATE_STR + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  alertBox(wrongAnswers.length + ' wrong answer(s) saved.');
+}
+
+function stripHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
+function requestStartFresh() {
+  document.getElementById('confirmModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('confirmModal').classList.remove('show');
+}
+
+function doStartFresh() {
+  activeQuestions = ALL_QUESTIONS.slice();
+  state = { answers: {}, current: 0, activeIds: activeQuestions.map(q => q.id) };
+  current = 0;
+  saveState();
+  closeModal();
+  document.getElementById('resultsPanel').classList.remove('show');
+  renderCards();
+  goTo(0);
+  updateNav();
+}
+
+window.toggleJump = toggleJump;
+window.showResults = showResults;
+window.retryWrongOnes = retryWrongOnes;
+window.saveWrongAnswers = saveWrongAnswers;
+window.requestStartFresh = requestStartFresh;
+window.closeModal = closeModal;
+window.doStartFresh = doStartFresh;
+window.selectAnswer = selectAnswer;
+window.goTo = goTo;
+
+renderCards();
+goTo(current);
+updateNav();
+</script>
+</body>
+</html>
